@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Customer Support AI</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #1f2937;
+        }
+
+        .header {
+            background: #111827;
+            color: white;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .status {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .chat-box {
+            background: white;
+            border-radius: 12px;
+            min-height: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            min-height: 420px;
+        }
+
+        .message {
+            margin-bottom: 18px;
+            display: flex;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .message.assistant .bubble {
+            background: #eef2f7;
+        }
+
+        .message.user .bubble {
+            background: #2563eb;
+            color: white;
+        }
+
+        .sources {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .input-area {
+            border-top: 1px solid #e5e7eb;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        #messageInput:focus {
+            border-color: #2563eb;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 0 22px;
+            background: #2563eb;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .welcome {
+            text-align: center;
+            margin-top: 130px;
+            color: #6b7280;
+        }
+
+        .welcome h2 {
+            color: #374151;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="header">
+    <h1>Customer Support AI</h1>
+    <div class="status">Local AI Assistant</div>
+</header>
+
+<main class="container">
+
+    <div class="chat-box">
+
+        <div class="messages" id="messages">
+
+            <div class="welcome" id="welcome">
+                <h2>How can I help you?</h2>
+                <p>
+                    Ask about your order, shipping, returns, or policies.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="input-area">
+
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="Type your question..."
+                autocomplete="off"
+            >
+
+            <button id="sendButton">
+                Send
+            </button>
+
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+    const input = document.getElementById("messageInput");
+    const button = document.getElementById("sendButton");
+    const messages = document.getElementById("messages");
+    const welcome = document.getElementById("welcome");
+
+
+    function addMessage(text, type, sources = []) {
+
+        if (welcome) {
+            welcome.style.display = "none";
+        }
+
+        const wrapper = document.createElement("div");
+        wrapper.className = `message ${type}`;
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = text;
+
+        wrapper.appendChild(bubble);
+
+        if (sources.length > 0) {
+
+            const sourceBox = document.createElement("div");
+            sourceBox.className = "sources";
+
+            sourceBox.textContent =
+                "Sources: " + sources.join(", ");
+
+            bubble.appendChild(sourceBox);
+        }
+
+        messages.appendChild(wrapper);
+
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+
+    async function sendMessage() {
+
+        const message = input.value.trim();
+
+        if (!message) {
+            return;
+        }
+
+        addMessage(message, "user");
+
+        input.value = "";
+        button.disabled = true;
+
+        try {
+
+            const response = await fetch("/chat", {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    message: message
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Something went wrong."
+                );
+            }
+
+            addMessage(
+                data.message || "No response received.",
+                "assistant",
+                data.sources || []
+            );
+
+        } catch (error) {
+
+            addMessage(
+                "Sorry, I couldn't process your request. " +
+                error.message,
+                "assistant"
+            );
+
+        } finally {
+
+            button.disabled = false;
+            input.focus();
+        }
+    }
+
+
+    button.addEventListener("click", sendMessage);
+
+
+    input.addEventListener("keydown", function(event) {
+
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+
+    });
+
+
+    input.focus();
+</script>
+
+</body>
+</html>
