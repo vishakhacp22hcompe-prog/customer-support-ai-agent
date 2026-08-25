@@ -17,7 +17,7 @@ The system combines knowledge-base retrieval, source prioritization, order looku
 ### Clone the repository
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone <git clone https://github.com/vishakhacp22hcompe-prog/customer-support-ai-agent.git>
 cd customer-support-ai-agent
 ```
 
